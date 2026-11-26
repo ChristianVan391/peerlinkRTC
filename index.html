@@ -1,0 +1,3202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PeerLinkRTC</title>
+<!-- PeerJS -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<!-- ZIP for images -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  :root{
+    --bg:#1f1f1f;
+    --panel:#252525;
+    --panel2:#2b2b2b;
+    --border:#3a3a3a;
+    --text:#eaeaea;
+    --muted:#b7b7b7;
+
+    --good:#2fb36d;
+    --warn:#d2a24b;
+    --bad:#d25a5a;
+
+    --btn:#2f2f2f;
+    --btnHover:#3a3a3a;
+    --btnDown:#242424;
+
+    --font: Segoe UI, Tahoma, Arial, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:var(--font);
+    background:var(--bg);
+    color:var(--text);
+  }
+
+  .wrap{
+    max-width:980px;
+    margin:0 auto;
+    padding:12px;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:0;
+    box-shadow:none;
+    overflow:hidden;
+    min-height: calc(100vh - 24px);
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel2);
+  }
+
+  .title{
+    font-size:14px;
+    font-weight:700;
+  }
+
+  .muted{ color:var(--muted); }
+
+  .pad{ padding:12px; }
+
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--btn);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:0;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .btn:hover{ background:var(--btnHover); }
+  .btn:active{ background:var(--btnDown); }
+
+  .btn.primary{
+    background:#2a3a4a;
+    border-color:#3d556b;
+  }
+  .btn.primary:hover{ background:#31465a; }
+
+  .btn.danger{
+    background:#4a2a2a;
+    border-color:#6b3d3d;
+  }
+  .btn.danger:hover{ background:#5a3131; }
+
+  .btn.ghost{ background:transparent; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .center{
+    height: calc(100vh - 64px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:12px;
+  }
+
+  .startBox{
+    width:min(520px, 100%);
+    border:1px solid var(--border);
+    background:var(--panel2);
+    padding:14px;
+  }
+
+  .banner{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel2);
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 8px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:0;
+    font-size:12px;
+    color:var(--text);
+  }
+
+  .dot{
+    width:8px;
+    height:8px;
+    border-radius:0;
+    background:var(--muted);
+  }
+  .dot.good{ background:var(--good); }
+  .dot.warn{ background:var(--warn); }
+  .dot.bad{ background:var(--bad); }
+
+  .mono{
+    font-family: Consolas, Menlo, ui-monospace, monospace;
+  }
+
+  .videoBox{
+    background:#000;
+  }
+
+  video{
+    width:100%;
+    height:auto;
+    display:block;
+    background:#000;
+  }
+
+  /* Settings UI */
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  @media (min-width:900px){
+    .grid{ grid-template-columns:1.2fr .8fr; }
+  }
+
+  .col{ min-width:280px; }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin:10px 0;
+  }
+
+  label{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  input, select, textarea{
+    width:100%;
+    padding:10px 10px;
+    border-radius:0;
+    border:1px solid var(--border);
+    background:#1b1b1b;
+    color:var(--text);
+    outline:none;
+  }
+
+  textarea{ min-height:92px; resize:vertical; }
+
+  input:focus, select:focus, textarea:focus{
+    outline:1px solid #5aa0ff;
+    outline-offset:0;
+  }
+
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.35;
+  }
+
+  .hr{
+    height:1px;
+    background:var(--border);
+    margin:10px 0;
+  }
+
+  .notice{
+    border:1px solid var(--border);
+    background:#202020;
+    padding:10px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+  }
+
+  details{
+    border:1px solid var(--border);
+    background:#202020;
+    padding:10px;
+  }
+
+  summary{
+    cursor:pointer;
+    color:var(--text);
+    font-weight:700;
+  }
+
+  /* Tooltip */
+  #tip{
+    position:fixed;
+    z-index:9999;
+    display:none;
+    pointer-events:none;
+    max-width:320px;
+    border:1px solid var(--border);
+    background:#101010;
+    color:var(--text);
+    padding:8px 10px;
+    font-size:12px;
+    line-height:1.25;
+    white-space:pre-wrap;
+  }
+
+  .tipItem{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    background:#1b1b1b;
+    color:var(--text);
+    font-size:12px;
+    cursor:default;
+    user-select:none;
+  }
+  .tipItem input{ width:auto; }
+  
+  #fxCanvas{
+  position:absolute;
+  left:-9999px;
+  top:-9999px;
+}
+
+/* Snapshot strip */
+.snapshotBar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  padding:8px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel2);
+  flex-wrap:wrap;
+}
+
+.motionToggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-top:6px;
+  font-size:12px;
+  color:var(--muted);
+  user-select:none;
+}
+.motionToggle input{
+  width:auto;
+}
+
+.snapshotStrip{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  flex:1;
+}
+
+.snapshotStrip img{
+  width:120px;
+  height:auto;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:#000;
+}
+
+.snapshotClear{
+  white-space:nowrap;
+}
+
+/* Preview overlay */
+.snapshotPreview{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.snapshotPreview img{
+  max-width:90vw;
+  max-height:90vh;
+  border:2px solid #000;
+}
+
+.viewerControls{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:10px 12px;
+  border-top:1px solid var(--border);
+  background:var(--panel2);
+}
+/* PHONE VIEWER HUD */
+.phone-viewer .banner{
+  display:none;
+}
+
+.phone-viewer .viewerControls{
+  display:none;
+}
+
+.phone-viewer #screenViewer{
+  padding:0;
+}
+
+.phone-viewer .videoBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+}
+
+.phone-viewer video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+#viewerHud{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .25s ease;
+}
+
+#viewerHud.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+#btnViewerBackHud{
+  position:static;
+}
+
+.viewerHudBottom{
+  position:absolute;
+  left:12px;
+  bottom:16px;
+  display:flex;
+  gap:10px;
+}
+
+.phone-viewer #viewerHud{
+  display:flex;
+  flex-direction:column;
+}
+
+.phone-viewer #viewerHudTop{
+  position:absolute;
+  top:12px;
+  left:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+#fsGate{
+  pointer-events:auto;
+}
+
+body.phone-viewer{
+  overflow:hidden;
+}
+
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="topbar">
+      <div class="title">PeerLinkRTC</div>
+      <div class="muted" style="font-size:12px">Powered by: webRTC and peerjs</div>
+    </div>
+
+    <!-- START -->
+    <div id="screenStart" class="screen active">
+      <div class="center">
+        <div class="startBox">
+          <div class="row" style="justify-content:space-between">
+            <button id="btnStartCamera" class="btn ghost">Start Camera</button>
+            <button id="btnViewCamera" class="btn">View Camera</button>
+            <button id="btnOpenSettings" class="btn ghost">Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="screenSettings" class="screen">
+      <div class="pad">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="title">Settings</div>
+            <div class="muted" style="font-size:12px">Broadcaster controls. settings do not apply to Viewer.</div>
+          </div>
+          <div class="row">
+            <button id="btnSettingsBack" class="btn">Back</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+          <div class="col">
+
+            <div class="field">
+              <label>Camera ID:</label>
+              <input id="setRoomCode" class="mono" inputmode="numeric" maxlength="8" placeholder="Enter Digit code (8 Digits only)...">
+              <div class="hint"></div>
+            </div>
+<div class="field">
+  <label>Camera name:</label>
+  <input id="setCameraName" maxlength="32" placeholder="e.g. Front Door">
+</div>
+            <div class="field">
+              <label>Max viewers:</label>
+              <input id="setMaxViewers" type="number" min="1" step="1">
+            </div>
+<div class="hr"></div>
+
+<div class="field">
+  <label>Viewer password (blank = off):</label>
+  <input id="setAuthPassword" type="password" placeholder="(blank = off)">
+</div>
+
+<div class="field">
+  <label class="tipItem" data-tip="If enabled, each new viewer must be manually approved after the password check.">
+    <input id="setRequireApproval" type="checkbox">
+    <span>Require manual approval</span>
+  </label>
+</div>
+            <div class="field">
+              <label>Audio ON/OFF:</label>
+              <select id="setAudioEnabled">
+                <option value="on">ON</option>
+                <option value="off">OFF</option>
+              </select>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="field">
+              <label>Resolution:</label>
+              <select id="setResolution"></select>
+            </div>
+
+            <div class="field">
+              <label>FPS:</label>
+              <select id="setFps"></select>
+            </div>
+
+            <div class="field">
+              <label>Degradation preference:</label>
+              <select id="setDegrade">
+                <option value="balanced">balanced (Recommended)</option>
+                <option value="maintain-framerate">maintain framerate</option>
+                <option value="maintain-resolution">maintain resolution</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="col">
+
+            <div class="field">
+              <label>Video Max Bitrate (Mbps):</label>
+              <input id="setVideoMbps" type="number" min="0.01" step="0.01">
+            </div>
+
+            <div class="field">
+              <label>Audio Max Bitrate (Kbps):</label>
+              <input id="setAudioKbps" type="number" min="4" step="1">
+            </div>
+
+<div class="hr"></div>
+
+<div class="field">
+  <label>Snapshots</label>
+  <label class="tipItem" data-tip="When enabled, motion detection captures snapshots and shows Clear + Download ZIP on the broadcaster screen.">
+    <input id="setMotionSnapshots" type="checkbox">
+    <span>Motion activated snapshots</span>
+  </label>
+</div>
+
+            <div class="hr"></div>
+
+            <div class="field">
+              <label>Audio processing:</label>
+              <div class="row" style="gap:8px">
+                <label class="tipItem" data-tip="Reduces speaker-to-mic feedback and echo. Best for voice. Can distort music/noisy environments.">
+                  <input id="setEchoCancel" type="checkbox">
+                  <span>echoCancellation</span>
+                </label>
+
+                <label class="tipItem" data-tip="Reduces steady background noise (fans, hum). Helps speech clarity. Can add artifacts and gate quiet sounds.">
+                  <input id="setNoiseSupp" type="checkbox">
+                  <span>noiseSuppression</span>
+                </label>
+
+                <label class="tipItem" data-tip="Automatic volume leveling. Keeps speech loudness consistent. Can pump levels and raise background noise.">
+                  <input id="setAutoGain" type="checkbox">
+                  <span>autoGainControl</span>
+                </label>
+              </div>
+            </div>
+
+            <details>
+              <summary>Advanced signaling (BE CAREFUL)</summary>
+
+              <div class="field">
+                <label>Host</label>
+                <input id="sigHost" class="mono" placeholder="(blank uses PeerJS defaults)">
+              </div>
+
+              <div class="row">
+                <div class="col field" style="flex:1">
+                  <label>Port</label>
+                  <input id="sigPort" class="mono" placeholder="(blank)">
+                </div>
+                <div class="col field" style="flex:1">
+                  <label>Path</label>
+                  <input id="sigPath" class="mono" placeholder="(blank)">
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Secure</label>
+                <select id="sigSecure">
+                  <option value="blank">(blank)</option>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>ICE servers JSON (optional)</label>
+                <textarea id="sigIce" class="mono" placeholder='[
+  {"urls":["stun:stun.l.google.com:19302"]}
+]'></textarea>
+              </div>
+            </details>
+
+            <div class="row">
+              <button id="btnApplySettings" class="btn primary">Apply Changes</button>
+            </div>
+
+            <div class="hint" id="settingsApplyHint" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<!-- BROADCASTER -->
+<div id="screenBroadcast" class="screen">
+<div class="banner">
+  <div class="pill">
+    <span class="dot" id="bDot"></span>
+    <span id="bState">Idle</span>
+  </div>
+
+  <div class="pill mono" id="bStats">-</div>
+
+  <div class="row">	
+  <button id="btnBroadcasterSettings" class="btn ghost">Settings</button>
+  
+    <button id="btnBroadcasterBack" class="btn danger">Back</button>
+  </div>
+</div>
+<div class="videoBox">
+  <!-- hidden raw camera feed -->
+<video id="rawVideo" playsinline autoplay muted
+  style="position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none"></video>
+
+  <!-- visible processed output -->
+  <canvas id="fxCanvas"></canvas>
+  <video id="localVideo" playsinline autoplay muted></video>
+</div>
+
+<!-- SNAPSHOT STRIP -->
+<div id="snapshotBar" class="snapshotBar">
+  <div id="snapshotStrip" class="snapshotStrip"></div>
+
+  <button id="btnClearSnapshots" class="btn danger snapshotClear">Clear</button>
+  <button id="btnDownloadSnapshots" class="btn">Download ZIP</button>
+</div>
+
+<!-- SNAPSHOT PREVIEW MODAL -->
+<div id="snapshotPreview" class="snapshotPreview">
+  <img id="snapshotPreviewImg">
+</div>
+
+      <div class="pad">
+        <div class="row" style="justify-content:space-between">
+          <div class="pill mono">Camera ID: <span id="bRoomCode"></span></div>
+          <div class="pill">Viewers <span id="bViewerCount">0</span></div>
+          <button id="btnRestartBroadcast" class="btn">Restart broadcast</button>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <label>Configured</label>
+          <div class="notice mono" id="bCaps" style="min-height:64px"></div>
+        </div>
+
+        <div class="field">
+          <label>Log</label>
+          <div class="notice mono" id="bLog" style="min-height:84px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEWER MINIMAL -->
+    <div id="screenViewer" class="screen">
+<div class="banner">
+  <div class="pill">
+    <span class="dot" id="vDot"></span>
+    <span id="vState">Idle</span>
+  </div>
+
+  <div class="row">
+    <div class="pill mono">Camera ID: <span id="vRoomLive">-</span></div>
+	  <div class="pill mono" id="vStats">-</div>
+    <button id="btnViewerBack" class="btn danger">Back</button>
+  </div>
+</div>
+<div class="videoBox">
+  <video id="remoteVideo" playsinline muted autoplay></video>
+  <audio id="remoteAudio" playsinline autoplay></audio>
+</div>
+
+<div id="viewerHud">
+
+  <div id="viewerHudTop">
+    <button id="btnViewerBackHud" class="btn danger">Back</button>
+
+<div class="pill">
+  <span class="dot" data-role="vDot"></span>
+  <span data-role="vState">Idle</span>
+</div>
+
+<div class="pill mono" data-role="vStats">-</div>
+  </div>
+
+  <div class="viewerHudBottom">
+    <button id="btnViewerSnap" class="btn primary">Snapshot</button>
+    <button id="btnViewerRec" class="btn primary">Record video</button>
+  </div>
+
+</div>
+
+    </div>
+
+  </div>
+</div>
+<!-- FULLSCREEN GATE (PHONE VIEWER ONLY) -->
+<div id="fsGate" style="
+  position:fixed;
+  inset:0;
+  background:#000;
+  color:#fff;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  z-index:10000;
+  padding:24px;
+">
+  <div>
+    <div style="font-size:18px;margin-bottom:16px">
+      Tap to enter fullscreen
+    </div>
+    <button id="btnFsGo" class="btn primary" style="font-size:18px;padding:14px 18px">
+      Enter Fullscreen
+    </button>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+(function(){
+  "use strict";
+  //detect if phone (for landscape on phone)
+const IS_PHONE =
+  /Android|iPhone|iPod/i.test(navigator.userAgent) &&
+  navigator.maxTouchPoints > 0 &&
+  Math.min(screen.width, screen.height) <= 600;
+if(IS_PHONE){
+  document.body.classList.add("phone-viewer");
+}else{
+  document.body.classList.remove("phone-viewer");
+}
+
+  //snapshots settings
+  const SNAP_MAX = 135;
+const snapshots = [];
+let motionPrev = null;
+let motionCooldown = false;
+
+let previousScreen = "screenStart";
+
+  function $(id){ return document.getElementById(id); }
+function showScreen(which){
+  const screens = ["screenStart","screenSettings","screenBroadcast","screenViewer"];
+
+  const current = screens.find(s => $(s).classList.contains("active"));
+  if(current && current !== which){
+    previousScreen = current;
+  }
+
+  for(const s of screens){
+    $(s).classList.toggle("active", s === which);
+  }
+}
+
+const state = {
+    settings: {
+      roomCode: "",
+      cameraName: "camera 1",
+      maxViewers: 1,
+      audioEnabled: true,
+
+      resolution: "1280x720",
+      fps: 30,
+      degrade: "balanced",
+
+      videoMbps: 2.50,
+      audioKbps: 48,
+
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+	  
+      motionSnapshotsEnabled: false,
+	  
+      authEnabled: false,
+      authPasswordHash: "",
+      authPasswordPlain: "", // <-- Add this here
+      requireApproval: true,
+
+      signaling: { host:"", port:"", path:"", secure:"", iceJson:"" }
+    },
+
+    mode: "idle",
+    peer: null,
+    localStream: null,
+    caps: { video: null },
+
+broadcaster: {
+  peerId: "",
+  peer: null,
+  viewerDataConns: new Map(),
+  activeCalls: new Map(),
+  viewerInfo: new Map(),
+  pendingApprovals: new Map(),
+  approvedPeers: new Set(),
+},
+
+viewer: {
+  peerId: "",
+  peer: null,
+  broadcasterPeerId: "",
+  call: null,
+  handshakeConn: null,
+  dummyStream: null,
+  authHash: "",
+}
+  };
+  //g
+let broadcasterReady = false;
+let fxCanvas = null;
+let fxCtx = null;
+let restartInProgress = false;
+let viewerReconnectTimer = null;
+let viewerReconnectBusy = false;
+let viewerStatsTimer = null;
+let fxToken = 0;
+let fpsToken = 0;
+let fxRaf = 0;
+let motionTimer = null;
+let motionBg = null;        // Float32Array of block background
+let motionNoise = 0;        // running noise estimate
+let motionBoxes = [];       // sorted biggest first: [{x0,y0,x1,y1,ts,count}]
+let motionStrongStreak = 0;
+let motionLastStrongTs = 0;
+let recActive = false;
+let vRecording = false;
+let recStartedAt = 0;
+
+let vSaveRec = null;
+let vSaveChunks = [];
+
+let hudTimer = null;
+let hudVisible = false;
+
+function syncViewerHud(){
+  const map = [
+    ["vDot",   "vDot"],
+    ["vState", "vState"],
+    ["vStats", "vStats"]
+  ];
+
+  for(const [id, role] of map){
+    const src = document.getElementById(id);
+    const dst = document.querySelector(`[data-role="${role}"]`);
+    if(!src || !dst) continue;
+
+    if(src.className) dst.className = src.className;
+    if(src.textContent) dst.textContent = src.textContent;
+  }
+}
+
+function toggleViewerHud(){  const hud = $("viewerHud");
+  if(!hud) return;
+
+  // If HUD is already visible, hide it immediately (toggle behavior)
+  if(hudVisible){
+    hud.classList.remove("show");
+    hudVisible = false;
+    if(hudTimer){
+      clearTimeout(hudTimer);
+      hudTimer = null;
+    }
+    return;
+  }
+
+  // Otherwise, show HUD
+  hud.classList.add("show");
+  hudVisible = true;
+
+  if(hudTimer) clearTimeout(hudTimer);
+  hudTimer = setTimeout(()=>{
+    if(document.fullscreenElement){
+      hud.classList.remove("show");
+      hudVisible = false;
+    }
+  }, 4000); // ← CHANGE THIS DURATION
+}
+
+function stopViewerReconnect(){
+  if(viewerReconnectTimer){
+    clearTimeout(viewerReconnectTimer);
+    viewerReconnectTimer = null;
+  }
+  viewerReconnectBusy = false;
+}
+
+function viewerSnapshot(){
+  const v = $("remoteVideo");
+  if(!v || !v.videoWidth || !v.videoHeight) return;
+
+  const c = viewerSnapshot._c || (viewerSnapshot._c = document.createElement("canvas"));
+  c.width = v.videoWidth;
+  c.height = v.videoHeight;
+
+  const g = c.getContext("2d", { alpha:false });
+  try{
+    g.drawImage(v, 0, 0, c.width, c.height);
+  }catch(e){
+    return;
+  }
+
+  c.toBlob(blob => {
+    if(!blob) return;
+
+    const ts = new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `PeerLinkRTC_view_${ts}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 1000);
+  }, "image/jpeg", 0.92);
+}
+
+function updateSnapshotUi(){
+  const enabled = !!state.settings.motionSnapshotsEnabled;
+
+  const bar = $("snapshotBar");
+  const btnClear = $("btnClearSnapshots");
+  const btnZip   = $("btnDownloadSnapshots");
+
+  const inBroadcaster = (state.mode === "broadcaster");
+
+  // Snapshot UI only when enabled AND broadcasting
+  if(bar) bar.style.display = (enabled && inBroadcaster) ? "flex" : "none";
+  if(btnClear) btnClear.style.display = enabled ? "" : "none";
+  if(btnZip)   btnZip.style.display   = enabled ? "" : "none";
+
+  // Motion detection (for boxes) always runs while broadcasting
+  if(inBroadcaster){
+    if(!motionTimer){
+      motionTimer = setInterval(() => {
+        if(state.mode !== "broadcaster") return;
+        const rv = $("rawVideo");
+        if(rv) detectMotion(rv);
+      }, 200);
+    }
+
+    // If snapshots are off, make sure cooldown cannot get stuck
+    if(!enabled) motionCooldown = false;
+
+    return;
+  }
+
+  // Leaving broadcaster: stop motion loop and clear buffers
+  if(motionTimer){
+    clearInterval(motionTimer);
+    motionTimer = null;
+  }
+  motionBoxes.length = 0;
+  motionPrev = null;
+  motionCooldown = false;
+}
+
+function findMotionComponents(mask, diff, bw, bh, maxBoxes, minCount){
+  const N = bw * bh;
+  const seen = new Uint8Array(N);
+  const comps = [];
+  const MIN = Math.max(1, minCount | 0);
+
+  for(let i = 0; i < N; i++){
+    if(!mask[i] || seen[i]) continue;
+
+    let head = 0;
+    const q = [i];
+    seen[i] = 1;
+
+    let count = 0;
+    let sumDiff = 0;
+    let maxDiff = 0;
+
+    let minX = bw, minY = bh, maxX = -1, maxY = -1;
+
+    while(head < q.length){
+      const idx = q[head++];
+      const y = (idx / bw) | 0;
+      const x = idx - y * bw;
+
+      count++;
+      const d = diff[idx] || 0;
+      sumDiff += d;
+      if(d > maxDiff) maxDiff = d;
+
+      if(x < minX) minX = x;
+      if(y < minY) minY = y;
+      if(x > maxX) maxX = x;
+      if(y > maxY) maxY = y;
+
+      for(let dy = -1; dy <= 1; dy++){
+        const yy = y + dy;
+        if(yy < 0 || yy >= bh) continue;
+
+        const row = yy * bw;
+        for(let dx = -1; dx <= 1; dx++){
+          if(dx === 0 && dy === 0) continue;
+          const xx = x + dx;
+          if(xx < 0 || xx >= bw) continue;
+
+          const ni = row + xx;
+          if(mask[ni] && !seen[ni]){
+            seen[ni] = 1;
+            q.push(ni);
+          }
+        }
+      }
+    }
+
+    if(count >= MIN){
+      comps.push({
+        minX, minY, maxX, maxY,
+        count,
+        sumDiff,
+        avgDiff: sumDiff / Math.max(1, count),
+        maxDiff
+      });
+    }
+  }
+
+  // sort by "how much motion", not just size
+  comps.sort((a,b) => (b.sumDiff - a.sumDiff) || (b.count - a.count));
+
+  // cap first to keep prune cheap
+  const capped = comps.slice(0, Math.max(1, (maxBoxes | 0) || 3) * 3);
+  return capped;
+}
+
+function pruneNestedComponents(comps){
+  const out = [];
+  for(let i = 0; i < comps.length; i++){
+    const a = comps[i];
+    let nested = false;
+
+    for(let j = 0; j < comps.length; j++){
+      if(i === j) continue;
+      const b = comps[j];
+
+      // if a is fully inside b (and b is not identical)
+      const inside =
+        (b.minX <= a.minX) && (b.minY <= a.minY) &&
+        (b.maxX >= a.maxX) && (b.maxY >= a.maxY);
+
+      const identical =
+        (b.minX === a.minX) && (b.minY === a.minY) &&
+        (b.maxX === a.maxX) && (b.maxY === a.maxY);
+
+      if(inside && !identical){
+        nested = true;
+        break;
+      }
+    }
+
+    if(!nested) out.push(a);
+  }
+  return out;
+}
+
+function morphDilate(src, dst, w, h){
+  dst.fill(0);
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      let v = 0;
+      for(let yy = Math.max(0, y - 1); yy <= Math.min(h - 1, y + 1); yy++){
+        const row = yy * w;
+        for(let xx = Math.max(0, x - 1); xx <= Math.min(w - 1, x + 1); xx++){
+          if(src[row + xx]){ v = 1; yy = h; break; }
+        }
+      }
+      dst[y * w + x] = v;
+    }
+  }
+}
+
+function morphErode(src, dst, w, h){
+  dst.fill(0);
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      let v = 1;
+      for(let yy = Math.max(0, y - 1); yy <= Math.min(h - 1, y + 1); yy++){
+        const row = yy * w;
+        for(let xx = Math.max(0, x - 1); xx <= Math.min(w - 1, x + 1); xx++){
+          if(!src[row + xx]){ v = 0; yy = h; break; }
+        }
+      }
+      dst[y * w + x] = v;
+    }
+  }
+}
+function captureSnapshot(){
+  if(!fxCanvas) return;
+
+  const W = 640;
+  const H = 320;
+
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+
+  const ctx = c.getContext("2d");
+
+  // clear background
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+
+  // preserve aspect ratio (NO STRETCH)
+  const srcW = fxCanvas.width;
+  const srcH = fxCanvas.height;
+
+  const scale = Math.min(W / srcW, H / srcH);
+  const dw = Math.floor(srcW * scale);
+  const dh = Math.floor(srcH * scale);
+  const dx = Math.floor((W - dw) / 2);
+  const dy = Math.floor((H - dh) / 2);
+
+  ctx.drawImage(fxCanvas, dx, dy, dw, dh);
+
+  c.toBlob(blob => {
+    if(!blob) return;
+
+    const url = URL.createObjectURL(blob);
+    snapshots.unshift({ blob, url });
+
+    if(snapshots.length > SNAP_MAX){
+      const old = snapshots.pop();
+      URL.revokeObjectURL(old.url);
+    }
+
+    renderSnapshots();
+  }, "image/jpeg", 0.35);
+}
+
+async function hashPassword(pw){
+  pw = (pw || "").trim();
+  if(!pw) return "";
+
+  // Best: SHA-256 via WebCrypto
+  try{
+    if(window.crypto && crypto.subtle && window.TextEncoder){
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw));
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+  }catch(e){}
+
+  // Fallback if subtle is blocked
+  return "plain:" + pw;
+}
+
+async function downloadSnapshotsZip(){
+  if(snapshots.length === 0) return;
+
+  const zip = new JSZip();
+  const folder = zip.folder("PeerLinkRTC_Snapshots");
+
+  snapshots.forEach((s, i) => {
+    folder.file(
+      `img_${String(i + 1).padStart(3, "0")}.jpg`,
+      s.blob
+    );
+  });
+
+  const blob = await zip.generateAsync({ type: "blob" });
+
+  const ts = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .slice(0, 19);
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `PeerLinkRTC_Snapshots_${ts}.zip`;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
+}
+
+function showSnapshotPreview(url){
+  $("snapshotPreviewImg").src = url;
+  $("snapshotPreview").style.display = "flex";
+}
+
+// click outside image closes
+$("snapshotPreview").addEventListener("click", () => {
+  $("snapshotPreview").style.display = "none";
+  $("snapshotPreviewImg").src = "";
+});
+
+// clicking image does NOT close
+$("snapshotPreviewImg").addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+function renderSnapshots(){
+  const strip = $("snapshotStrip");
+  if(!strip) return;
+
+  strip.innerHTML = "";
+
+  for(const s of snapshots){
+    const img = document.createElement("img");
+    img.src = s.url;
+    img.loading = "lazy";
+    img.title = "Click to preview";
+    img.addEventListener("click", ()=> showSnapshotPreview(s.url));
+    strip.appendChild(img);
+  }
+}
+
+  function randDigits(n){
+    let s = "";
+    for(let i=0;i<n;i++) s += String(Math.floor(Math.random()*10));
+    return s;
+  }
+  function digitsOnly8(s){
+    return (s || "").replace(/\D+/g, "").slice(0,8);
+  }
+  function ensure8(s){
+    s = digitsOnly8(s);
+    while(s.length < 8) s += "0";
+    return s;
+  }
+  function codeToPeerId(code){ return "c" + code; }
+
+// ===== RTC (manual WebRTC, PeerJS only for signaling) =====
+
+
+function setBanner(which, status, dotClass, statsText){
+  const dotId = (which === "b") ? "bDot" : "vDot";
+  const stateId = (which === "b") ? "bState" : "vState";
+  const statsId = (which === "b") ? "bStats" : "vStats";
+
+  $(dotId).className = "dot " + dotClass;
+  $(stateId).textContent = status;
+  if(statsText !== undefined) $(statsId).textContent = statsText;
+
+  if(which === "v") syncViewerHud();
+}
+
+  function bLog(line){
+    const el = $("bLog");
+    el.textContent = (line + "\n" + el.textContent).slice(0, 4500);
+  }
+
+  const RES_PRESETS = ["320x240","640x480","800x600","1024x768","1280x720","1920x1080","2560x1440","3840x2160"];
+  const FPS_PRESETS = [5,10,15,20,24,25,30,48,50,60];
+
+  function fillResolution(){
+    const sel = $("setResolution");
+    sel.innerHTML = "";
+    let list = RES_PRESETS.slice();
+
+    if(state.caps.video && state.caps.video.width && state.caps.video.height){
+      const w = state.caps.video.width;
+      const h = state.caps.video.height;
+      list = list.filter(v=>{
+        const a = v.split("x").map(Number);
+        return a[0] >= (w.min||0) && a[0] <= (w.max||99999) && a[1] >= (h.min||0) && a[1] <= (h.max||99999);
+      });
+      if(list.length === 0) list = RES_PRESETS.slice();
+    }
+
+    for(const v of list){
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    }
+    sel.value = list.includes(state.settings.resolution) ? state.settings.resolution : (list.includes("1280x720") ? "1280x720" : list[0]);
+  }
+
+  function fillFps(){
+    const sel = $("setFps");
+    sel.innerHTML = "";
+    let list = FPS_PRESETS.slice();
+
+    if(state.caps.video && state.caps.video.frameRate){
+      const fr = state.caps.video.frameRate;
+      list = list.filter(x => x >= (fr.min||0) && x <= (fr.max||999));
+      if(list.length === 0) list = FPS_PRESETS.slice();
+    }
+
+    for(const v of list){
+      const opt = document.createElement("option");
+      opt.value = String(v);
+      opt.textContent = String(v);
+      sel.appendChild(opt);
+    }
+
+    const want = String(state.settings.fps || 30);
+    sel.value = list.map(String).includes(want) ? want : String(list.includes(30) ? 30 : list[0]);
+  }
+
+function buildPeerOptions(){
+  const s = state.settings.signaling;
+  const opts = { debug: 1 };
+
+  const host = (s.host || "").trim();
+  const port = (s.port || "").trim();
+  const path = (s.path || "").trim();
+  const sec  = (s.secure || "").trim();
+  const iceRaw = (s.iceJson || "").trim();
+
+  if(host) opts.host = host;
+  if(port) opts.port = Number(port);
+  if(path) opts.path = path;
+
+  if(sec === "true") opts.secure = true;
+  if(sec === "false") opts.secure = false;
+
+  let iceServers = null;
+
+  if(iceRaw){
+    try{
+      const parsed = JSON.parse(iceRaw);
+      if(Array.isArray(parsed)) iceServers = parsed;
+    }catch(e){}
+  }
+
+  if(!iceServers){
+    iceServers = [
+      { urls: ["stun:stun.l.google.com:19302"] },
+      { urls: ["stun:stun1.l.google.com:19302"] }
+    ];
+  }
+
+opts.config = { iceServers };
+return opts;
+}
+
+  function parseRes(res){
+    const a = String(res).split("x").map(Number);
+    return { w: a[0] || 1280, h: a[1] || 720 };
+  }
+
+  function buildGumConstraints(){
+    const r = parseRes(state.settings.resolution);
+    const fps = Number(state.settings.fps || 30);
+
+    const video = { width:{ideal:r.w}, height:{ideal:r.h}, frameRate:{ideal:fps} };
+
+    let audio = false;
+    if(state.settings.audioEnabled){
+      audio = {
+        echoCancellation: !!state.settings.echoCancellation,
+        noiseSuppression: !!state.settings.noiseSuppression,
+        autoGainControl: false
+      };
+    }
+    return { video, audio };
+  }
+
+function applySenderParams(pc){
+  if(!pc || !pc.getSenders) return;
+
+  const senders = pc.getSenders();
+
+  for(const sender of senders){
+    if(!sender.track) continue;
+
+    const kind = sender.track.kind;
+    const params = sender.getParameters();
+    if(!params.encodings) params.encodings = [{}];
+
+// VIDEO
+if(kind === "video"){
+  params.encodings[0].maxBitrate =
+    Math.floor(state.settings.videoMbps * 1_000_000);
+	params.encodings[0].maxFramerate = Math.max(1, Math.floor(Number(state.settings.fps || 30)));
+
+  params.degradationPreference = state.settings.degrade;
+
+  // FORCE KEYFRAMES AT LOW FPS (THIS FIXES BLUR)
+params.encodings[0].keyFrameInterval = 1;
+}
+    // AUDIO
+    if(kind === "audio"){
+      params.encodings[0].maxBitrate =
+        Math.floor(state.settings.audioKbps * 1_000);
+    }
+
+    try{
+      sender.setParameters(params);
+    }catch(e){
+      bLog("setParameters failed: " + kind);
+    }
+  }
+}
+
+function applySenderParamsForViewer(pc, info){
+  if(!pc || !pc.getSenders) return;
+
+  const isAndroid = !!(info && info.android);
+  const mem = Number((info && info.mem) || 0);
+  const lowMem = (mem > 0 && mem <= 2);
+
+  for(const sender of pc.getSenders()){
+    if(!sender.track) continue;
+
+    const kind = sender.track.kind;
+    const params = sender.getParameters();
+    if(!params.encodings) params.encodings = [{}];
+    const enc = params.encodings[0];
+
+    if(kind === "video"){
+      // default (your global broadcaster settings)
+      enc.maxBitrate = Math.floor(state.settings.videoMbps * 1_000_000);
+      enc.maxFramerate = Math.max(1, Math.floor(Number(state.settings.fps || 30)));
+      params.degradationPreference = state.settings.degrade;
+
+      // Android viewer: lighter stream (does NOT change broadcaster settings UI)
+      if(isAndroid){
+        enc.maxBitrate = lowMem ? 1_200_000 : 1_500_000;   // 0.8 or 1.2 Mbps
+        enc.maxFramerate = lowMem ? 25 : 30;             // 20 or 30 fps
+        enc.scaleResolutionDownBy = lowMem ? 2 : 2;      // downscale encode
+        params.degradationPreference = "maintain-framerate";
+      }
+    }
+
+    if(kind === "audio"){
+      enc.maxBitrate = Math.floor(state.settings.audioKbps * 1_000);
+      if(isAndroid){
+        enc.maxBitrate = 32_000;
+      }
+    }
+
+    try{ sender.setParameters(params); }catch(e){}
+  }
+}
+
+async function destroyPeer(){
+  // viewer side
+  if(state.viewer.handshakeConn){
+    try{ state.viewer.handshakeConn.close(); }catch(e){}
+    state.viewer.handshakeConn = null;
+  }
+
+  if(state.viewer.call){
+    try{ state.viewer.call.close(); }catch(e){}
+    state.viewer.call = null;
+  }
+
+  // broadcaster side
+  try{
+    for(const dc of state.broadcaster.viewerDataConns.values()){
+      try{ dc.close(); }catch(e){}
+    }
+    state.broadcaster.viewerDataConns.clear();
+  }catch(e){}
+
+  if(state.broadcaster.peer){
+    try{ state.broadcaster.peer.destroy(); }catch(e){}
+    state.broadcaster.peer = null;
+  }
+
+  broadcasterReady = false;
+
+  // CRITICAL: give PeerJS server time to release the ID
+  await new Promise(r => setTimeout(r, 4500));
+}
+
+function stopFxLoop(){
+  fxToken++;
+  if(fxRaf){
+    try{ cancelAnimationFrame(fxRaf); }catch(e){}
+    fxRaf = 0;
+  }
+}
+
+function stopLocalStream(){
+  stopFxLoop();
+if(state.__audioCtxs){
+  for(const ac of state.__audioCtxs){
+    try{ ac.close(); }catch(e){}
+  }
+  state.__audioCtxs = null;
+}
+
+  if(state.localStream){
+    try{
+      for(const t of state.localStream.getTracks()){
+        try{ t.stop(); }catch(e){}
+      }
+    }catch(e){}
+    state.localStream = null;
+  }
+  $("localVideo").srcObject = null;
+}
+
+function clearRemote(){
+  $("remoteVideo").srcObject = null;
+  const a = $("remoteAudio");
+  if(a) a.srcObject = null;
+}
+
+  async function hardReset(){
+  for(const s of snapshots){
+  URL.revokeObjectURL(s.url);
+}
+snapshots.length = 0;
+renderSnapshots();
+
+try{
+  state.broadcaster.pendingApprovals.clear();
+  state.broadcaster.approvedPeers.clear();
+}catch(e){}
+
+  if(motionTimer){
+  clearInterval(motionTimer);
+  motionTimer = null;
+  motionBoxes.length = 0;
+  motionBg = null;
+  motionNoise = 0;
+  motionCooldown = false;
+
+}
+
+if(state.viewer.call){
+  try{ state.viewer.call.close(); }catch(e){}
+}
+state.viewer.call = null;
+clearRemote();
+if(state.viewer.handshakeConn){
+  try{ state.viewer.handshakeConn.close(); }catch(e){}
+}
+state.viewer.handshakeConn = null;
+destroyDummyStream();
+
+  try{
+for(const call of state.broadcaster.viewerDataConns.values()){
+  try{ call.close(); }catch(e){}
+}
+    state.broadcaster.viewerDataConns.clear();
+  }catch(e){}
+
+  stopLocalStream();
+  await destroyPeer();
+
+  state.mode = "idle";
+  showScreen("screenStart");
+}
+
+function openSettings(){
+    $("setCameraName").value = state.settings.cameraName;
+    $("setRoomCode").value = state.settings.roomCode;
+    $("setMaxViewers").value = String(state.settings.maxViewers);
+    $("setAudioEnabled").value = state.settings.audioEnabled ? "on" : "off";
+
+    $("setAuthPassword").value = state.settings.authPasswordPlain || "";
+    $("setRequireApproval").checked = !!state.settings.requireApproval;
+
+    fillResolution();
+    fillFps();
+
+    $("setDegrade").value = state.settings.degrade;
+
+    $("setVideoMbps").value = String(state.settings.videoMbps);
+    $("setAudioKbps").value = String(state.settings.audioKbps);
+	
+    $("setMotionSnapshots").checked = !!state.settings.motionSnapshotsEnabled;
+
+    $("setEchoCancel").checked = !!state.settings.echoCancellation;
+    $("setNoiseSupp").checked = !!state.settings.noiseSuppression;
+    $("setAutoGain").checked = !!state.settings.autoGainControl;
+
+    $("sigHost").value = state.settings.signaling.host;
+    $("sigPort").value = state.settings.signaling.port;
+    $("sigPath").value = state.settings.signaling.path;
+    $("sigSecure").value = (state.settings.signaling.secure === "" ? "blank" : state.settings.signaling.secure);
+    $("sigIce").value = state.settings.signaling.iceJson;
+
+    $("settingsApplyHint").textContent = "";
+    showScreen("screenSettings");
+  }
+
+  async function applySettings(){
+    state.settings.roomCode = ensure8($("setRoomCode").value);
+    state.settings.cameraName = ($("setCameraName").value || "").trim() || "camera 1";
+    state.settings.maxViewers = Math.max(1, Math.floor(Number($("setMaxViewers").value || 1)));
+
+    state.settings.audioEnabled = $("setAudioEnabled").value === "on";
+    state.settings.requireApproval = !!$("setRequireApproval").checked;
+
+    const pw = ($("setAuthPassword").value || "").trim();
+    if(pw){
+      // Save and update password
+      state.settings.authEnabled = true;
+      state.settings.authPasswordPlain = pw;
+      state.settings.authPasswordHash = await hashPassword(pw);
+    }else{
+      // Blank box clears/disables password
+      state.settings.authEnabled = false;
+      state.settings.authPasswordPlain = "";
+      state.settings.authPasswordHash = "";
+    }
+
+    state.settings.resolution = $("setResolution").value;
+    state.settings.fps = Math.max(1, Math.floor(Number($("setFps").value || 30)));
+    state.settings.degrade = $("setDegrade").value;
+
+    state.settings.videoMbps = Math.max(0.05, Number($("setVideoMbps").value || 2.5));
+    state.settings.audioKbps = Math.max(6, Number($("setAudioKbps").value || 48));
+
+    const was = !!state.settings.motionSnapshotsEnabled;
+    state.settings.motionSnapshotsEnabled = $("setMotionSnapshots").checked;
+
+    if(was && !state.settings.motionSnapshotsEnabled) motionCooldown = false;
+    updateSnapshotUi();
+
+    state.settings.echoCancellation = $("setEchoCancel").checked;
+    state.settings.noiseSuppression = $("setNoiseSupp").checked;
+    state.settings.autoGainControl = $("setAutoGain").checked;
+
+    state.settings.signaling.host = $("sigHost").value;
+    state.settings.signaling.port = $("sigPort").value;
+    state.settings.signaling.path = $("sigPath").value;
+    const sec = $("sigSecure").value;
+    state.settings.signaling.secure = (sec === "blank") ? "" : String(sec);
+    state.settings.signaling.iceJson = $("sigIce").value;
+
+    if(state.mode === "broadcaster"){
+      $("settingsApplyHint").textContent = "Some changes require restart. Use Restart broadcast.";
+    }else{
+      $("settingsApplyHint").textContent = "Applied.";
+    }
+  }
+
+function updateBroadcasterCount(){
+  $("bViewerCount").textContent =
+    String(state.broadcaster.activeCalls.size);
+}
+
+function broadcasterCapsText(constraints){
+  const audioText = constraints.audio
+    ? JSON.stringify({
+        echoCancellation: !!state.settings.echoCancellation,
+        noiseSuppression: !!state.settings.noiseSuppression,
+        autoGainControl: !!state.settings.autoGainControl
+      })
+    : "false";
+
+  return [
+    "video: " + JSON.stringify(constraints.video),
+    "audio: " + audioText,
+    "caps: video " + state.settings.videoMbps + " Mbps, audio " +
+      (state.settings.audioEnabled ? state.settings.audioKbps + " Kbps" : "off"),
+    "degrade: " + state.settings.degrade
+  ].join("\n");
+}
+// modify video stream
+
+const HUD_H = 20;
+
+function drawRecIndicator(c, W, H){
+  if(!recActive) return;
+
+  const visible = (Math.floor(performance.now() / 500) % 2) === 0;
+  if(!visible) return;
+
+  const text = "REC";
+
+  const size = 18 * 1.75;
+  const hudH = HUD_H * 1.75;
+  const pad = 6;
+
+  c.save();
+  c.font = size + "px monospace";
+
+  let x, y;
+
+  if(W > 640){
+    c.textAlign = "right";
+    c.textBaseline = "top";
+    x = W - pad;
+    y = pad + HUD_H + 4;
+  }else{
+    c.textAlign = "right";
+    c.textBaseline = "top";
+    x = W - pad;
+    y = pad;
+  }
+
+  const m = c.measureText(text).width;
+
+  const boxY = y - 2;
+
+  c.fillStyle = "rgba(0,0,0,.35)";
+  c.fillRect(x - m - 4, boxY, m + 8, hudH);
+
+  c.lineWidth = Math.max(1.6, size * 0.08);
+  c.strokeStyle = "#000";
+  c.strokeText(text, x, y);
+
+  c.fillStyle = "#ff3b3b";
+  c.fillText(text, x, y);
+
+  c.restore();
+}
+
+function drawWatermark(ctx, W, H){
+  const t = "PeerLinkRTC";
+  const p = 12;
+  const s = Math.max(12, (W * 0.018) | 0);
+
+  ctx.save();
+  ctx.font = s + "px sans-serif";
+  ctx.textBaseline = "bottom";
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = "#fff";
+  ctx.fillText(t, p, H - p);
+  ctx.restore();
+}
+
+function drawTimestamp(c,w,h){
+  const d=new Date(),p=n=>(""+n).padStart(2,"0"),z=-d.getTimezoneOffset()/60;
+  const t=
+    d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+
+    p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())+
+    " UTC"+(z>=0?"+":"")+z;
+
+  c.font="18px monospace";
+  c.textBaseline="top";
+
+  const m=c.measureText(t).width;
+  let x,y;
+
+if(w <= 320){
+  // row 1, left (timestamp on top)
+  x = 6;
+  y = 6;
+  }else if(w <= 640){
+    // row 2, left
+    x = 6;
+    y = 6 + HUD_H + 2;
+  }else{
+    // normal
+    x = w - m - 10;
+    y = 6;
+  }
+
+  c.fillStyle="rgba(0,0,0,.35)";
+  c.fillRect(x-4,y-2,m+8,HUD_H);
+
+  c.lineWidth=1.6;
+  c.strokeStyle="#000";
+  c.strokeText(t,x,y);
+
+  c.fillStyle="#fff";
+  c.fillText(t,x,y);
+}
+
+function drawCamId(c,w,h,id,name){
+  c.font="18px monospace";
+  c.textBaseline="top";
+
+  const tiny = w <= 320;
+  const x = 6;
+const y = (w <= 320) ? (6 + HUD_H + 2) : 6;
+
+  if(!tiny){
+    const t = "Cam ID: " + id + " - Name: " + name;
+    const m = c.measureText(t).width;
+
+    c.fillStyle="rgba(0,0,0,.35)";
+    c.fillRect(x-4,y-2,m+8,HUD_H);
+
+    c.lineWidth=1.6;
+    c.strokeStyle="#000";
+    c.strokeText(t,x,y);
+
+    c.fillStyle="#fff";
+    c.fillText(t,x,y);
+    return;
+  }
+
+  // two-line mode (≤320)
+  const t1 = "Cam ID: " + id;
+  const t2 = "Name: " + name;
+
+  const m1 = c.measureText(t1).width;
+  const m2 = c.measureText(t2).width;
+  const bw = Math.max(m1,m2)+8;
+
+  c.fillStyle="rgba(0,0,0,.35)";
+  c.fillRect(x-4,y-2,bw,HUD_H*2+2);
+
+  c.lineWidth=1.6;
+  c.strokeStyle="#000";
+  c.strokeText(t1,x,y);
+  c.strokeText(t2,x,y+HUD_H+2);
+
+  c.fillStyle="#fff";
+  c.fillText(t1,x,y);
+  c.fillText(t2,x,y+HUD_H+2);
+}
+
+function drawMotionBoxes(ctx, W, H){
+  if(!motionBoxes || motionBoxes.length === 0) return;
+
+  const now = performance.now();
+  if(now - motionBoxes[0].ts > 800) return;
+
+  ctx.save();
+  ctx.lineWidth = Math.max(2, Math.round(Math.min(W, H) * 0.006));
+  ctx.strokeStyle = "#39ff14";
+
+  for(const b of motionBoxes){
+    if(!b) continue;
+    if(now - b.ts > 800) continue;
+
+    const x = Math.floor(b.x0 * W);
+    const y = Math.floor(b.y0 * H);
+    const w = Math.max(1, Math.floor((b.x1 - b.x0) * W));
+    const h = Math.max(1, Math.floor((b.y1 - b.y0) * H));
+
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  ctx.restore();
+}
+
+function startFxLoop(rawVideo){
+  const myToken = ++fxToken;
+
+  fxCanvas = $("fxCanvas");
+  fxCanvas.width  = rawVideo.videoWidth;
+  fxCanvas.height = rawVideo.videoHeight;
+
+  fxCtx = fxCanvas.getContext("2d", { alpha:false, desynchronized:true });
+
+  const targetFps = Math.max(1, Math.floor(Number(state.settings.fps || 30)));
+  const frameMs = 1000 / targetFps;
+  let next = performance.now();
+
+  function drawFrame(now){
+    if(myToken !== fxToken) return;
+
+    if(!rawVideo.videoWidth || !rawVideo.videoHeight){
+      rawVideo.requestVideoFrameCallback(drawFrame);
+      return;
+    }
+
+    if(now >= next){
+      const W = fxCanvas.width, H = fxCanvas.height;
+      try{
+	  //video modifiers
+fxCtx.drawImage(rawVideo, 0, 0, W, H);
+
+drawMotionBoxes(fxCtx, W, H);
+drawCamId(
+  fxCtx,
+  W,
+  H,
+  state.settings.roomCode,
+  state.settings.cameraName
+);
+drawTimestamp(fxCtx, W, H);
+drawRecIndicator(fxCtx, W, H);
+drawWatermark(fxCtx, W, H);
+
+      }catch(e){}
+
+      if(now - next > frameMs * 2) next = now + frameMs;
+      else next += frameMs;
+    }
+
+    rawVideo.requestVideoFrameCallback(drawFrame);
+  }
+
+  rawVideo.requestVideoFrameCallback(drawFrame);
+}
+
+function processAudioTrack(inputTrack, enableAgc){
+  if(!enableAgc){
+    return { track: inputTrack, ctx: null };
+  }
+
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = new AC();
+  const src = ac.createMediaStreamSource(new MediaStream([inputTrack]));
+
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -32;
+  comp.knee.value = 10;
+  comp.ratio.value = 12;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.35;
+
+  const limiter = ac.createDynamicsCompressor();
+  limiter.threshold.value = -40;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.001;
+  limiter.release.value = 0.35;
+
+  const gain = ac.createGain();
+  gain.gain.value = 3.3;
+
+  src.connect(comp);
+  comp.connect(limiter);
+  limiter.connect(gain);
+
+  const dest = ac.createMediaStreamDestination();
+  gain.connect(dest);
+
+  const outTrack = dest.stream.getAudioTracks()[0];
+  return { track: outTrack, ctx: ac };
+}
+
+function detectMotion(rawVideo){
+  const snapshotsEnabled = !!state.settings.motionSnapshotsEnabled;
+  if(!rawVideo || !rawVideo.videoWidth || !rawVideo.videoHeight) return;
+
+  const W = 160;
+  const H = Math.max(90, Math.round(W * (rawVideo.videoHeight / rawVideo.videoWidth)));
+
+  const c = detectMotion._c || (detectMotion._c = document.createElement("canvas"));
+  if(c.width !== W || c.height !== H){
+    c.width = W;
+    c.height = H;
+    motionPrev = null; // force re-seed after resize
+  }
+
+  const g = detectMotion._g || (detectMotion._g = c.getContext("2d", { willReadFrequently:true }));
+  try{ g.drawImage(rawVideo, 0, 0, W, H); }catch(e){ return; }
+
+  const img = g.getImageData(0, 0, W, H).data;
+
+  const bw = 64, bh = 36;
+  const N = bw * bh;
+
+  // reuse buffers
+  const diff = detectMotion._diff || (detectMotion._diff = new Float32Array(N));
+  const mask = detectMotion._mask || (detectMotion._mask = new Uint8Array(N));
+  const tmp  = detectMotion._tmp  || (detectMotion._tmp  = new Uint8Array(N));
+
+  mask.fill(0);
+
+  if(!motionPrev || motionPrev.length !== N){
+    motionPrev = new Float32Array(N);
+    for(let by=0; by<bh; by++){
+      for(let bx=0; bx<bw; bx++){
+        const x = Math.min(W-1, Math.floor((bx + 0.5) * W / bw));
+        const y = Math.min(H-1, Math.floor((by + 0.5) * H / bh));
+        const i = (y * W + x) * 4;
+        motionPrev[by*bw + bx] = 0.2126*img[i] + 0.7152*img[i+1] + 0.0722*img[i+2];
+      }
+    }
+    return;
+  }
+
+  let sum = 0;
+  for(let by=0; by<bh; by++){
+    for(let bx=0; bx<bw; bx++){
+      const x = Math.min(W-1, Math.floor((bx + 0.5) * W / bw));
+      const y = Math.min(H-1, Math.floor((by + 0.5) * H / bh));
+      const i = (y * W + x) * 4;
+      const lum = 0.2126*img[i] + 0.7152*img[i+1] + 0.0722*img[i+2];
+
+      const idx = by*bw + bx;
+      const d = Math.abs(lum - motionPrev[idx]);
+      motionPrev[idx] = lum;
+
+      diff[idx] = d;
+      if(d > 18) mask[idx] = 1; // sensitivity
+      sum += d;
+    }
+  }
+
+  morphDilate(mask, tmp, bw, bh);
+  morphErode(tmp, mask, bw, bh);
+
+  let comps = findMotionComponents(mask, diff, bw, bh, 3, 10);
+  comps = pruneNestedComponents(comps);
+
+  if(comps.length === 0){
+    motionBoxes.length = 0;
+    return;
+  }
+
+  motionBoxes = comps.slice(0,3).map(cmp => ({
+    x0: cmp.minX / bw,
+    y0: cmp.minY / bh,
+    x1: (cmp.maxX + 1) / bw,
+    y1: (cmp.maxY + 1) / bh,
+    ts: performance.now(),
+    count: cmp.count
+  }));
+
+  // Boxes always update, snapshots only when enabled
+  if(!snapshotsEnabled){
+    motionCooldown = false;
+    return;
+  }
+
+  // snapshots are harder to trigger than boxes
+  if(motionCooldown) return;
+
+  const now = performance.now();
+  const best = comps && comps.length ? comps[0] : null;
+  if(!best) return;
+
+  // tune these
+  const SNAP_SCORE = 1600;      // higher = fewer snaps
+  const SNAP_MINCOUNT = 20;    // require bigger moving area
+  const SNAP_AVGDIFF = 14;     // require stronger per-block change
+  const SNAP_STREAK = 2;       // require N strong detections close together
+  const SNAP_COOLDOWN_MS = 10000;
+  const STREAK_GAP_MS = 450;
+
+  const strong =
+    (best.sumDiff >= SNAP_SCORE) &&
+    (best.count >= SNAP_MINCOUNT) &&
+    (best.avgDiff >= SNAP_AVGDIFF);
+
+  if(strong){
+    if((now - motionLastStrongTs) > STREAK_GAP_MS) motionStrongStreak = 0;
+    motionStrongStreak = Math.min(SNAP_STREAK, motionStrongStreak + 1);
+    motionLastStrongTs = now;
+  }else{
+    if((now - motionLastStrongTs) > STREAK_GAP_MS) motionStrongStreak = 0;
+  }
+
+  if(motionStrongStreak < SNAP_STREAK) return;
+
+  motionCooldown = true;
+  motionStrongStreak = 0;
+  captureSnapshot();
+  setTimeout(() => { motionCooldown = false; }, SNAP_COOLDOWN_MS);
+}
+
+  async function startBroadcaster(){
+    if(state.mode !== "idle") await hardReset();
+    state.mode = "broadcaster";
+    showScreen("screenBroadcast");
+	
+broadcasterReady = false;
+
+setBanner("b","Starting","warn","-");
+bLog("Starting broadcaster...");
+
+const roomEl = $("bRoomCode");
+if(roomEl) roomEl.textContent = state.settings.roomCode;
+
+updateBroadcasterCount();
+
+    const constraints = buildGumConstraints();
+    $("bCaps").textContent = broadcasterCapsText(constraints);
+
+    try{
+      state.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+	  try{
+  const aTracks = state.localStream.getAudioTracks();
+  bLog("Audio tracks: " + aTracks.length);
+  if(aTracks[0]){
+    bLog("Audio label: " + (aTracks[0].label || "(no label)"));
+    bLog("Audio enabled: " + aTracks[0].enabled);
+  }
+}catch(e){}
+    }catch(e){
+      alert("Camera error: " + (e && e.message ? e.message : e));
+      await hardReset();
+      return;
+    }
+
+const rawVideo = $("rawVideo");
+rawVideo.srcObject = state.localStream;
+
+await new Promise(resolve => {
+  if(rawVideo.readyState >= 2){
+    rawVideo.play().catch(()=>{});
+    resolve();
+  }else{
+    rawVideo.onloadedmetadata = () => {
+      rawVideo.play().catch(()=>{});
+      resolve();
+    };
+  }
+});
+
+if(rawVideo.requestVideoFrameCallback){
+  attachRealFpsMeter(rawVideo, $("bStats"));
+}
+
+// start canvas FX
+startFxLoop(rawVideo);
+
+// capture canvas as video
+const fxStream = fxCanvas.captureStream(Math.max(1, Math.floor(Number(state.settings.fps || 30))));
+
+// build outgoing stream
+const outStream = new MediaStream();
+
+// canvas video track
+outStream.addTrack(fxStream.getVideoTracks()[0]);
+
+state.__audioCtxs = [];
+
+for(const at of state.localStream.getAudioTracks()){
+  const p = processAudioTrack(at, state.settings.autoGainControl);
+  outStream.addTrack(p.track);
+  if(p.ctx) state.__audioCtxs.push(p.ctx);
+}
+
+// swap stream
+state.localStream = outStream;
+
+// show processed preview
+$("localVideo").srcObject = outStream;
+await $("localVideo").play();
+
+updateSnapshotUi();
+
+    try{
+      const vt = state.localStream.getVideoTracks()[0];
+      if(vt && vt.getCapabilities) state.caps.video = vt.getCapabilities();
+    }catch(e){}
+
+    let actual = "-";
+    try{
+      const vt = state.localStream.getVideoTracks()[0];
+      const s = vt.getSettings ? vt.getSettings() : {};
+      actual = `${s.width || 0}x${s.height || 0}`;
+	  $("bStats").textContent = actual + " @ … fps";
+    }catch(e){}
+
+    const peerId = codeToPeerId(state.settings.roomCode);
+    state.broadcaster.peerId = peerId;
+
+const peer = new Peer(peerId, buildPeerOptions());
+state.broadcaster.peer = peer;
+
+peer.on("open", ()=>{
+  broadcasterReady = true;
+  setBanner("b","Broadcasting","good",actual);
+  bLog("Peer open: " + peerId);
+});
+
+peer.on("error", (err)=>{
+  bLog("Peer error: " + err.message);
+});
+	peer.on("call", (call) => {
+  bLog("Incoming media call from " + call.peer);
+  
+  if(state.broadcaster.activeCalls.size >= state.settings.maxViewers){
+  bLog("Rejecting media call (max viewers reached): " + call.peer);
+  try{ call.close(); }catch(e){}
+  return;
+}
+
+  try{
+    call.answer(state.localStream);
+    bLog("Answered media call");
+	
+	state.broadcaster.activeCalls.set(call.peer, call);
+updateBroadcasterCount();
+	
+setTimeout(() => {
+  try{
+    const info = state.broadcaster.viewerInfo.get(call.peer) || null;
+    applySenderParamsForViewer(call.peerConnection, info);
+    bLog("Applied per-viewer encode (android=" + (!!(info && info.android)) + ")");
+  }catch(e){}
+}, 200);
+	    try{
+      const pc = call.peerConnection;
+      if(pc){
+        pc.addEventListener("iceconnectionstatechange", ()=> bLog("pc ice: " + pc.iceConnectionState));
+        pc.addEventListener("connectionstatechange", ()=> bLog("pc conn: " + pc.connectionState));
+      }
+    }catch(e){}
+  }catch(e){
+    bLog("Answer failed");
+    try{ call.close(); }catch(_e){}
+    return;
+  }
+
+call.on("close", () => {
+  bLog("Media call closed: " + call.peer);
+  state.broadcaster.activeCalls.delete(call.peer);
+  updateBroadcasterCount();
+});
+
+call.on("error", () => {
+  bLog("Media call error: " + call.peer);
+  state.broadcaster.activeCalls.delete(call.peer);
+  updateBroadcasterCount();
+});
+});
+// HANDSHAKE: tell viewers we are ready for media calls
+state.broadcaster.peer.on("connection", (conn) => {
+  if(!broadcasterReady){
+    bLog("Handshake rejected, broadcaster not ready");
+    try{ conn.close(); }catch(e){}
+    return;
+  }
+
+  state.broadcaster.viewerDataConns.set(conn.peer, conn);
+  bLog("Handshake connection from " + conn.peer);
+
+  // NEW: handle viewer leave message
+conn.on("data", (msg) => {
+
+  // ===== REC CONTROL (must be FIRST, outside hello) =====
+if(msg && msg.t === "rec-start"){
+  recActive = true;
+  recStartedAt = performance.now();
+  return;
+}
+
+if(msg && msg.t === "rec-stop"){
+  recActive = false;
+  recStartedAt = 0;
+  return;
+}
+
+  // ===== HELLO: viewer handshake =====
+  if(msg && msg.t === "hello"){
+    state.broadcaster.viewerInfo.set(conn.peer, msg);
+
+    // Max viewers gate (before approval)
+    if(state.broadcaster.activeCalls.size >= state.settings.maxViewers){
+      try{ conn.send({ t:"reject", r:"max-viewers" }); }catch(e){}
+      try{ conn.close(); }catch(e){}
+      return;
+    }
+
+    // Password gate
+    if(state.settings.authEnabled){
+      if(!msg.auth || msg.auth !== state.settings.authPasswordHash){
+        bLog("Reject viewer (bad password): " + conn.peer);
+        try{ conn.send({ t:"reject", r:"bad-password" }); }catch(e){}
+        try{ conn.close(); }catch(e){}
+        return;
+      }
+    }
+
+    // Approval gate
+    if(state.settings.requireApproval && !state.broadcaster.approvedPeers.has(conn.peer)){
+      try{ conn.send({ t:"pending-approval" }); }catch(e){}
+
+      const info = msg || {};
+      const ok = confirm(
+        "Approve viewer?\n\n" +
+        "Peer: " + conn.peer + "\n" +
+        "Android: " + (!!info.android) + "\n" +
+        "Mem: " + (info.mem || 0) + "\n" +
+        "Cores: " + (info.cores || 0)
+      );
+
+      if(!ok){
+        bLog("Rejected by broadcaster: " + conn.peer);
+        try{ conn.send({ t:"reject", r:"denied" }); }catch(e){}
+        try{ conn.close(); }catch(e){}
+        return;
+      }
+
+      state.broadcaster.approvedPeers.add(conn.peer);
+      bLog("Approved viewer: " + conn.peer);
+    }
+
+    // Allow viewer to place media call
+    try{ conn.send({ t:"ready-for-call" }); }catch(e){}
+    return;
+  }
+
+  // ===== LEAVE =====
+  if(msg && msg.t === "leave"){
+    bLog("Viewer requested leave: " + conn.peer);
+
+    const call = state.broadcaster.activeCalls.get(conn.peer);
+    if(call){
+      try{ call.close(); }catch(e){}
+      state.broadcaster.activeCalls.delete(conn.peer);
+    }
+
+    state.broadcaster.viewerDataConns.delete(conn.peer);
+    state.broadcaster.viewerInfo.delete(conn.peer);
+    updateBroadcasterCount();
+
+    try{ conn.close(); }catch(e){}
+    return;
+  }
+});
+
+  // ALSO: if handshake dies, close media call too
+conn.on("close", () => {
+  const call = state.broadcaster.activeCalls.get(conn.peer);
+  if(call){
+    try{ call.close(); }catch(e){}
+    state.broadcaster.activeCalls.delete(conn.peer);
+  }
+  state.broadcaster.viewerDataConns.delete(conn.peer);
+  state.broadcaster.viewerInfo.delete(conn.peer);
+  updateBroadcasterCount();
+});
+
+conn.on("error", () => {
+  const call = state.broadcaster.activeCalls.get(conn.peer);
+  if(call){
+    try{ call.close(); }catch(e){}
+    state.broadcaster.activeCalls.delete(conn.peer);
+  }
+  state.broadcaster.viewerDataConns.delete(conn.peer);
+  state.broadcaster.viewerInfo.delete(conn.peer);
+  updateBroadcasterCount();
+});
+});
+
+}
+
+async function restartBroadcaster(){
+  if(state.mode !== "broadcaster") return;
+  if(restartInProgress) return;
+  restartInProgress = true;
+
+  setBanner("b","Restarting","warn","-");
+  bLog("Restart requested (soft)");
+
+  // close existing media calls so viewers immediately drop and will re-call
+  try{
+    for(const call of state.broadcaster.activeCalls.values()){
+      try{ call.close(); }catch(e){}
+    }
+    state.broadcaster.activeCalls.clear();
+  }catch(e){}
+  updateBroadcasterCount();
+
+  // stop old capture
+  stopLocalStream();
+
+  // acquire new capture and rebuild FX pipeline
+  const constraints = buildGumConstraints();
+  $("bCaps").textContent = broadcasterCapsText(constraints);
+
+  try{
+    state.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+  }catch(e){
+    bLog("Camera error on restart: " + (e && e.message ? e.message : e));
+    setBanner("b","Camera error","bad","-");
+    restartInProgress = false;
+    return;
+  }
+
+const rawVideo = $("rawVideo");
+rawVideo.srcObject = state.localStream;
+
+await new Promise(resolve => {
+  if(rawVideo.readyState >= 2){
+    rawVideo.play().catch(()=>{});
+    resolve();
+  }else{
+    rawVideo.onloadedmetadata = () => {
+      rawVideo.play().catch(()=>{});
+      resolve();
+    };
+  }
+});
+
+  // restart meters/FX cleanly
+  if(rawVideo.requestVideoFrameCallback){
+  attachRealFpsMeter(rawVideo, $("bStats"));
+}
+  stopFxLoop();
+  startFxLoop(rawVideo);
+
+const fxStream = fxCanvas.captureStream(Math.max(1, Math.floor(Number(state.settings.fps || 30))));
+const outStream = new MediaStream();
+
+// video
+outStream.addTrack(fxStream.getVideoTracks()[0]);
+
+// close any previous AGC contexts
+if(state.__audioCtxs){
+  for(const ac of state.__audioCtxs){
+    try{ ac.close(); }catch(e){}
+  }
+}
+state.__audioCtxs = [];
+
+// audio (rebuild on restart)
+for(const at of state.localStream.getAudioTracks()){
+  const p = processAudioTrack(at, state.settings.autoGainControl);
+  outStream.addTrack(p.track);
+  if(p.ctx) state.__audioCtxs.push(p.ctx);
+}
+
+// swap
+state.localStream = outStream;
+
+  $("localVideo").srcObject = outStream;
+  await $("localVideo").play();
+
+  updateSnapshotUi();
+
+  // update stats text
+  let actual = "-";
+  try{
+    const vt = state.localStream.getVideoTracks()[0];
+    const s = vt.getSettings ? vt.getSettings() : {};
+    actual = `${s.width || 0}x${s.height || 0}`;
+    $("bStats").textContent = actual + " @ … fps";
+  }catch(e){}
+
+  // IMPORTANT: do NOT destroy/recreate the broadcaster Peer.
+  // Just tell any connected viewers to call again.
+  try{
+    for(const conn of state.broadcaster.viewerDataConns.values()){
+      if(conn && conn.open){
+        try{ conn.send({ t:"ready-for-call" }); }catch(e){}
+      }
+    }
+  }catch(e){}
+
+  setBanner("b","Broadcasting","good",actual);
+  bLog("Soft restart complete");
+
+  restartInProgress = false;
+}
+
+async function rebuildViewerPeer(){
+  if(state.viewer.peer){
+    try{ state.viewer.peer.destroy(); }catch(e){}
+    state.viewer.peer = null;
+  }
+
+  await new Promise(r=>setTimeout(r, 800));
+
+  state.viewer.peerId = "v" + randDigits(10);
+  const peer = new Peer(state.viewer.peerId, buildPeerOptions());
+  state.viewer.peer = peer;
+
+  peer.on("open", ()=>{
+    startHandshake();
+  });
+
+  peer.on("error", ()=>{
+    if(state.mode === "viewer"){
+      scheduleViewerFullReconnect();
+    }
+  });
+}
+
+function scheduleViewerFullReconnect(){
+  if(viewerReconnectTimer) return;
+
+  viewerReconnectTimer = setTimeout(async ()=>{
+    viewerReconnectTimer = null;
+
+    if(state.mode !== "viewer"){
+      viewerReconnectBusy = false;
+      return;
+    }
+
+    if(viewerReconnectBusy) return;
+    viewerReconnectBusy = true;
+
+    try{
+      setBanner("v","Reconnecting","warn","-");
+
+      if(state.viewer.handshakeConn){
+        try{ state.viewer.handshakeConn.close(); }catch(e){}
+        state.viewer.handshakeConn = null;
+      }
+
+      if(state.viewer.call){
+        try{ state.viewer.call.close(); }catch(e){}
+        state.viewer.call = null;
+      }
+
+      clearRemote();
+
+      await rebuildViewerPeer();
+    }finally{
+      viewerReconnectBusy = false;
+    }
+  }, 1200);
+}
+
+async function requestPhoneFullscreen(){
+  try{
+    if(!document.fullscreenElement){
+      await document.documentElement.requestFullscreen();
+    }
+    if(screen.orientation && screen.orientation.lock){
+      await screen.orientation.lock("landscape");
+    }
+  }catch(e){
+    // silently fail, same as YouTube
+  }
+}
+
+function showFsGate(show){
+  const g = document.getElementById("fsGate");
+  if(g) g.style.display = show ? "flex" : "none";
+}
+
+  async function startViewerWithCode(code){
+    if(state.mode !== "idle") await hardReset();
+    state.mode = "viewer";
+    showScreen("screenViewer");
+    $("remoteVideo").muted = true;
+const a = $("remoteAudio");
+if(a) a.muted = false;
+    clearRemote();
+    $("vRoomLive").textContent = code;
+    setBanner("v","Connecting","warn","-");
+
+    const broadcasterId = codeToPeerId(code);
+    state.viewer.broadcasterPeerId = broadcasterId;
+
+
+state.viewer.peerId = "v" + randDigits(10);
+const viewerId = state.viewer.peerId;
+
+const peer = new Peer(viewerId, buildPeerOptions());
+state.viewer.peer = peer;
+state.viewer.dummyStream = state.viewer.dummyStream || makeDummyStream();
+
+peer.on("open", ()=>{
+  setTimeout(startHandshake, 500);
+});
+
+peer.on("error", ()=>{
+  if(state.mode === "viewer"){
+    setBanner("v","Reconnecting","warn","-");
+    scheduleViewerFullReconnect();
+  }
+});
+
+}
+
+
+  /* Tooltip wiring */
+  function tipShow(text, x, y){
+    const tip = $("tip");
+    tip.textContent = text;
+    tip.style.display = "block";
+    tip.style.left = (x + 14) + "px";
+    tip.style.top = (y + 14) + "px";
+  }
+  function tipMove(x, y){
+    const tip = $("tip");
+    if(tip.style.display !== "block") return;
+    tip.style.left = (x + 14) + "px";
+    tip.style.top = (y + 14) + "px";
+  }
+  function tipHide(){
+    $("tip").style.display = "none";
+  }
+  
+function startHandshake(){
+  const peer = state.viewer.peer;
+  const broadcasterId = state.viewer.broadcasterPeerId;
+  if(!peer || !broadcasterId) return;
+
+  setBanner("v","Handshaking","warn","-");
+
+  const conn = peer.connect(broadcasterId, { reliable: true });
+  state.viewer.handshakeConn = conn;
+const timeout = setTimeout(() => {
+  if(state.mode !== "viewer") return;
+  try{ conn.close(); }catch(e){}
+  scheduleViewerFullReconnect();
+}, 4000);
+
+conn.on("open", ()=> clearTimeout(timeout));
+conn.on("close", ()=> clearTimeout(timeout));
+conn.on("error", ()=> clearTimeout(timeout));
+
+conn.on("open", ()=>{
+stopViewerReconnect();
+  setBanner("v","Waiting for ready","warn","-");
+  conn.send({
+  t: "hello",
+  auth: state.viewer.authHash || "",
+  android: /Android/i.test(navigator.userAgent || ""),
+  mem: navigator.deviceMemory || 0,
+  cores: navigator.hardwareConcurrency || 0
+});
+});
+
+conn.on("data", msg => {
+  if(msg && msg.t === "reject"){
+    if(msg.r === "max-viewers"){
+      setBanner("v","Full","bad","Max viewers reached");
+      try{ conn.close(); }catch(e){}
+      return;
+    }
+  }
+
+if(msg && msg.t === "pending-approval"){
+  setBanner("v","Waiting approval","warn","-");
+  return;
+}
+
+if(msg && msg.t === "reject"){
+  setBanner("v","Denied","bad", (msg.r || ""));
+  try{ conn.close(); }catch(e){}
+  return;
+}
+
+if(msg && msg.t === "ready-for-call"){
+  setBanner("v","Calling","warn","-");
+  startViewerCall();
+}
+});
+
+conn.on("close", ()=>{
+  if(state.mode === "viewer"){
+    setBanner("v","Reconnecting","warn","-");
+    scheduleViewerFullReconnect();
+  }
+});
+
+conn.on("error", ()=>{
+  if(state.mode === "viewer"){
+    setBanner("v","Reconnecting","warn","-");
+    scheduleViewerFullReconnect();
+  }
+});
+}
+
+function makeDummyStream(){
+  const ms = new MediaStream();
+
+  // dummy video
+  const c = document.createElement("canvas");
+  c.width = 16; c.height = 16;
+  const g = c.getContext("2d");
+  g.fillRect(0,0,16,16);
+
+  const vs = c.captureStream(1);
+  const vt = vs.getVideoTracks()[0];
+  if(vt){
+    vt.enabled = false;
+    ms.addTrack(vt);
+  }
+
+  // dummy audio
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    const dest = ac.createMediaStreamDestination();
+
+    // constant 0 signal
+    const src = ac.createConstantSource ? ac.createConstantSource() : null;
+    if(src){
+      src.offset.value = 0;
+      src.connect(dest);
+      src.start();
+      ms.__asrc = src;
+    }else{
+      // fallback oscillator
+      const osc = ac.createOscillator();
+      osc.frequency.value = 0;
+      osc.connect(dest);
+      osc.start();
+      ms.__osc = osc;
+    }
+
+    const at = dest.stream.getAudioTracks()[0];
+    if(at){
+      at.enabled = false;
+      ms.addTrack(at);
+    }
+
+    ms.__ac = ac;
+  }catch(e){}
+
+  return ms;
+}
+
+function destroyDummyStream(){
+  const ms = state.viewer.dummyStream;
+  if(!ms) return;
+
+  // stop tracks first
+  try{
+    for(const t of ms.getTracks()){
+      try{ t.stop(); }catch(e){}
+    }
+  }catch(e){}
+
+  // stop and disconnect sources
+  try{
+    if(ms.__asrc){
+      try{ ms.__asrc.stop(); }catch(e){}
+      try{ ms.__asrc.disconnect(); }catch(e){}
+      ms.__asrc = null;
+    }
+  }catch(e){}
+
+  try{
+    if(ms.__osc){
+      try{ ms.__osc.stop(); }catch(e){}
+      try{ ms.__osc.disconnect(); }catch(e){}
+      ms.__osc = null;
+    }
+  }catch(e){}
+
+  // close audio context
+  try{
+    if(ms.__ac){
+      const ac = ms.__ac;
+      ms.__ac = null;
+      try{ ac.close().catch(()=>{}); }catch(e){}
+    }
+  }catch(e){}
+
+  state.viewer.dummyStream = null;
+}
+
+let audioUnlocked = false;
+function unlockAudioOnce(){
+  if(audioUnlocked) return;
+  audioUnlocked = true;
+
+  const v = $("remoteVideo");
+  const a = $("remoteAudio");
+
+  if(v) v.play().catch(()=>{});
+  if(a){
+    a.muted = false;
+    a.play().catch(()=>{});
+  }
+  }
+
+// Edge file:// autoplay sometimes needs a real user gesture
+document.addEventListener("pointerdown", unlockAudioOnce, { passive:true });
+document.addEventListener("keydown", unlockAudioOnce);
+
+function attachRealFpsMeter(videoEl, labelEl){
+  const myToken = ++fpsToken;
+
+  let frames = 0;
+  let lastTime = performance.now();
+
+  function onFrame(){
+    if(myToken !== fpsToken) return;
+
+    frames++;
+    const now = performance.now();
+    const dt = now - lastTime;
+
+    if(dt >= 1000){
+      const fps = (frames * 1000 / dt).toFixed(1);
+      const base = labelEl.textContent.split("@")[0].trim();
+      labelEl.textContent = `${base} @ ${fps} fps`;
+      frames = 0;
+      lastTime = now;
+    }
+
+    videoEl.requestVideoFrameCallback(onFrame);
+  }
+
+  videoEl.requestVideoFrameCallback(onFrame);
+}
+
+function startViewerStats(pc, labelEl){
+  if(viewerStatsTimer){
+    clearTimeout(viewerStatsTimer);
+    viewerStatsTimer = null;
+  }
+
+  let lastV = null;
+  let lastA = null;
+  let lastTs = performance.now();
+
+  async function poll(){
+    if(state.mode !== "viewer") return;
+
+    if(!pc){
+      labelEl.textContent = "-";
+      viewerStatsTimer = setTimeout(poll, 500);
+      return;
+    }
+
+    const cs = pc.connectionState || "";
+    if(cs === "closed"){
+      labelEl.textContent = "PC closed";
+      return; // stop, a new call will start a new loop
+    }
+
+    if(cs !== "connected"){
+      labelEl.textContent = "PC " + cs;
+      viewerStatsTimer = setTimeout(poll, 500);
+      return;
+    }
+
+    let stats;
+    try{
+      stats = await pc.getStats();
+    }catch(e){
+      labelEl.textContent = "stats error";
+      viewerStatsTimer = setTimeout(poll, 1000);
+      return;
+    }
+
+    let vIn = null, aIn = null, vCodec = null, aCodec = null;
+
+    stats.forEach(r => {
+      const kind = r.kind || r.mediaType;
+      if(r.type === "inbound-rtp" && kind === "video") vIn = r;
+      if(r.type === "inbound-rtp" && kind === "audio") aIn = r;
+
+      if(r.type === "codec" && r.mimeType){
+        if(r.mimeType.indexOf("video/") === 0) vCodec = r.mimeType.slice(6);
+        if(r.mimeType.indexOf("audio/") === 0) aCodec = r.mimeType.slice(6);
+      }
+    });
+
+    const now = performance.now();
+    const dt = Math.max(0.001, (now - lastTs) / 1000);
+    lastTs = now;
+
+    let vBr = "-";
+    let aBr = "-";
+
+    if(vIn && lastV != null) vBr = (((vIn.bytesReceived - lastV) * 8) / dt / 1e6).toFixed(2);
+    if(aIn && lastA != null) aBr = (((aIn.bytesReceived - lastA) * 8) / dt / 1e3).toFixed(0);
+
+    lastV = vIn ? vIn.bytesReceived : null;
+    lastA = aIn ? aIn.bytesReceived : null;
+
+    const vRes = (vIn && vIn.frameWidth && vIn.frameHeight) ? (vIn.frameWidth + "x" + vIn.frameHeight) : "-";
+    const vTxt = (vBr !== "-" ? vBr + " Mbps " : "") + vRes;
+    const aTxt = (aBr !== "-" ? aBr + " kbps" : "-");
+    const cTxt = (vCodec || "-") + " / " + (aCodec || "-");
+
+    labelEl.textContent = "V " + vTxt + " | A " + aTxt + " | " + cTxt;
+    syncViewerHud();
+
+    viewerStatsTimer = setTimeout(poll, 1000);
+  }
+
+  poll();
+}
+
+function startViewerCall(){
+  const peer = state.viewer.peer;
+  const broadcasterId = state.viewer.broadcasterPeerId;
+  if(!peer || !broadcasterId) return false;
+
+  if(state.viewer.call){
+    try{ state.viewer.call.close(); }catch(e){}
+    state.viewer.call = null;
+  }
+
+  let call;
+  try{
+call = peer.call(broadcasterId, state.viewer.dummyStream || makeDummyStream());
+state.viewer.call = call;
+try{
+  const pc = call.peerConnection;
+  if(pc){
+    pc.addEventListener("iceconnectionstatechange", ()=> setBanner("v","ICE " + pc.iceConnectionState,"warn","-"));
+    pc.addEventListener("connectionstatechange", ()=> setBanner("v","PC " + pc.connectionState,"warn","-"));
+  }
+}catch(e){}
+  }catch(e){
+    return false;
+  }
+
+  let gotStream = false;
+
+call.on("stream", (stream)=>{
+if(IS_PHONE && document.fullscreenElement){
+  toggleViewerHud();
+}
+  stopViewerReconnect();
+
+  const vid = $("remoteVideo");
+  const aud = $("remoteAudio");
+
+  vid.srcObject = stream;
+
+  vid.playsInline = true;
+  vid.muted = true;
+  vid.volume = 0;
+
+  if(aud){
+    aud.srcObject = stream;
+    aud.muted = false;
+    aud.playsInline = true;
+  }
+
+  const tryPlay = ()=>{
+    unlockAudioOnce();
+    vid.play().catch(()=>{});
+    if(aud) aud.play().catch(()=>{});
+  };
+
+  vid.onclick = tryPlay;
+  tryPlay();
+
+  const pc = call.peerConnection;
+  if(viewerStatsTimer){ clearTimeout(viewerStatsTimer); viewerStatsTimer = null; }
+  startViewerStats(pc, $("vStats"));
+});
+
+call.on("close", ()=>{
+  // stop the saved-file recorder if running
+  if(vSaveRec && vSaveRec.state !== "inactive"){
+    try{ vSaveRec.stop(); }catch(e){}
+  }
+  vSaveRec = null;
+  vSaveChunks = [];
+
+  if(state.mode === "viewer"){
+    setBanner("v","Reconnecting","warn","-");
+    scheduleViewerFullReconnect();
+  }
+  vRecording = false;
+updateRecButton();
+});
+
+call.on("error", ()=>{
+  if(state.mode === "viewer"){
+    setBanner("v","Reconnecting","warn","-");
+    scheduleViewerFullReconnect();
+  }
+});
+
+  return true;
+}
+
+async function startViewerRecording(){
+  if(vRecording) return;
+
+const stream = $("remoteVideo").srcObject;
+const call = state.viewer.call;
+const pc = call && call.peerConnection;
+
+if(
+  !stream ||
+  !pc ||
+  pc.connectionState !== "connected"
+){
+  alert("Stream not ready.");
+  return;
+}
+
+  let mime = "";
+  const prefer = [
+    "video/webm;codecs=vp8,opus",
+    "video/webm"
+  ];
+  for(const m of prefer){
+    try{ if(MediaRecorder.isTypeSupported(m)){ mime = m; break; } }catch(e){}
+  }
+
+  try{
+    vSaveRec = mime
+      ? new MediaRecorder(stream, { mimeType: mime })
+      : new MediaRecorder(stream);
+  }catch(e){
+    alert("Recorder failed.");
+    return;
+  }
+
+  vSaveChunks = [];
+  vRecording = true;
+  try{
+  state.viewer.handshakeConn?.send({ t: "rec-start" });
+}catch(e){}
+  updateRecButton();
+
+  vSaveRec.ondataavailable = e => {
+    if(e.data && e.data.size) vSaveChunks.push(e.data);
+  };
+
+  vSaveRec.onstop = () => {
+  // keep locals before clearing globals
+  const rec = vSaveRec;
+  const chunks = vSaveChunks.slice();
+
+  vRecording = false;
+  updateRecButton();
+
+  vSaveRec = null;
+  vSaveChunks = [];
+
+  const mimeType = (rec && rec.mimeType) ? rec.mimeType : "video/webm";
+  const blob = new Blob(chunks, { type: mimeType });
+
+  if(blob.size > 0){
+    downloadViewerRecording(blob);
+  }
+};
+  vSaveRec.start();
+}
+
+function stopViewerRecording(){
+  if(!vRecording) return;
+
+try{
+  state.viewer.handshakeConn?.send({ t: "rec-stop" });
+}catch(e){}
+
+  vRecording = false;
+  updateRecButton();
+
+  if(vSaveRec && vSaveRec.state !== "inactive"){
+    try{ vSaveRec.stop(); }catch(e){}
+  }
+}
+
+function downloadViewerRecording(blob){
+  const ts = new Date()
+    .toISOString()
+    .replace(/[:.]/g,"-")
+    .slice(0,19);
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `PeerLinkRTC_record_${ts}.webm`;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(()=>{
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  },1000);
+}
+
+function updateRecButton(){
+  const btn = $("btnViewerRec");
+  if(!btn) return;
+
+  if(vRecording){
+    btn.textContent = "Recording";
+    btn.classList.remove("primary");
+    btn.classList.add("danger");
+  }else{
+    btn.textContent = "Record video";
+    btn.classList.remove("danger");
+    btn.classList.add("primary");
+  }
+}
+
+  function bindUi(){
+    $("btnStartCamera").addEventListener("click", startBroadcaster);
+
+$("btnViewCamera").addEventListener("click", async ()=>{
+  let code = prompt("Enter Camera ID");
+  if(code === null) return;
+  code = digitsOnly8(code);
+  if(code.length !== 8){
+    alert("Need 8 digits.");
+    return;
+  }
+
+  const pw = prompt("Password (blank if none)");
+  if(pw === null) return;
+
+  state.viewer.authHash = await hashPassword(pw);
+
+  // RE-SHOW FULLSCREEN GATE ON PHONE BEFORE VIEWER STARTS
+  if(IS_PHONE){
+    showFsGate(true);
+  }
+
+  await startViewerWithCode(code);
+});
+
+    $("btnOpenSettings").addEventListener("click", openSettings);
+    $("btnSettingsBack").addEventListener("click", ()=>{
+  showScreen(previousScreen || "screenStart");
+});
+    $("btnViewerBack").addEventListener("click", doViewerBack);
+    $("btnViewerBackHud").addEventListener("click", doViewerBack);
+
+    $("btnApplySettings").addEventListener("click", ()=>{ applySettings(); });
+    $("btnDownloadSnapshots").onclick = downloadSnapshotsZip;
+
+    $("btnBroadcasterSettings").addEventListener("click", openSettings);
+    $("btnBroadcasterBack").addEventListener("click", hardReset);
+    $("btnRestartBroadcast").addEventListener("click", restartBroadcaster);
+
+    $("btnViewerSnap").addEventListener("click", viewerSnapshot);
+
+    $("btnViewerRec").addEventListener("click", ()=>{
+      if(vRecording) stopViewerRecording();
+      else startViewerRecording();
+    });
+
+function doViewerBack(){
+  stopViewerReconnect();
+  viewerReconnectBusy = false;
+  destroyDummyStream();
+
+  if(state.viewer.handshakeConn && state.viewer.handshakeConn.open){
+    try{ state.viewer.handshakeConn.send({t:"leave"}); }catch(e){}
+  }
+
+  if(state.viewer.peer){
+    state.viewer.peer.destroy();
+    state.viewer.peer = null;
+  }
+
+  if(vSaveRec && vSaveRec.state !== "inactive"){
+    try{ vSaveRec.stop(); }catch(e){}
+  }
+
+  vSaveRec = null;
+  vSaveChunks = [];
+  vRecording = false;
+  updateRecButton();
+
+  state.mode = "idle";
+  showScreen("screenStart");
+}
+    $("setRoomCode").addEventListener("input", ()=>{
+      $("setRoomCode").value = digitsOnly8($("setRoomCode").value);
+    });
+
+    document.addEventListener("mousemove", (e)=> tipMove(e.clientX, e.clientY));
+    for(const el of document.querySelectorAll("[data-tip]")){
+      el.addEventListener("mouseenter", (e)=>{
+        tipShow(el.getAttribute("data-tip") || "", e.clientX, e.clientY);
+      });
+      el.addEventListener("mouseleave", tipHide);
+    }
+	document.getElementById("btnClearSnapshots").onclick = () => {
+  for(const s of snapshots){
+    URL.revokeObjectURL(s.url);
+  }
+  snapshots.length = 0;
+  renderSnapshots();
+};
+const fsBtn = $("btnFsGo");
+if(fsBtn){
+  fsBtn.addEventListener("click", async ()=>{
+    await requestPhoneFullscreen();
+    showFsGate(false);
+  });
+}
+
+const rv = $("remoteVideo");
+if(rv){
+  rv.addEventListener("click", ()=>{
+    if(!IS_PHONE) return;
+    toggleViewerHud();
+  });
+}
+  }
+
+function init(){
+  state.settings.roomCode = randDigits(8);
+
+  state.settings.signaling = {
+    host: "",
+    port: "",
+    path: "",
+    secure: "",
+    iceJson: ""
+  };
+
+  fillResolution();
+  fillFps();
+  bindUi();
+  updateSnapshotUi();
+  state.settings.requireApproval = true;
+
+  // SHOW FULLSCREEN GATE IMMEDIATELY ON PHONES
+  if(IS_PHONE){
+    showFsGate(true);
+  }
+}
+
+init();
+})();
+</script>
+</body>
+</html>
+
